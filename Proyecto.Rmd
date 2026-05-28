@@ -1,0 +1,184 @@
+---
+title: "Modelo_Proyecto"
+author: "Sebastián Calvo"
+date: "2026-05-27"
+output: html_document
+---
+
+# Librerías
+
+```{r, message = FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(lubridate)
+library(hms)
+library(lme4)
+library(car)
+library(MASS)
+library(lattice)
+library(lmtest)
+```
+
+Tratamiento de base
+```{r, warning=FALSE}
+setwd("C:/Users/Ander/OneDrive - Universidad de Costa Rica/Proyecto Avanzados - General/Bases")
+base = read_excel("Base_Limpia.xlsx")
+```
+
+# Modelo para la duración de las preguntas
+
+```{r}
+base1.1 <- base %>%
+  mutate(
+    ti_hora  = as_hms(ti),
+    tf_hora  = as_hms(tf),
+    dif_hora = as_hms(dif),
+    dif_minutos = as.numeric(difftime(tf, ti, units = "mins"))
+  )
+
+base1.1$tool = factor(base1.1$tool)
+base1.1$Pregunta = factor(base1.1$Pregunta)
+base1.1$Semestre = factor(base1.1$Semestre)
+base1.1$Grupo = factor(base1.1$Grupo)
+base1.1$id_est = factor(base1.1$id_est)
+```
+
+
+## Análisis de interacción
+
+### Interacción entre Herramienta y pregunta 
+
+```{r}
+xyplot(dif_minutos~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
+ylab="Tiempo",data=base1.1,auto.key = TRUE)
+```
+
+Posible interacción entre herramienta y la pregunta
+
+### Interacción entre Semestre y pregunta 
+
+```{r}
+xyplot(dif_minutos~tool, groups = Semestre ,type=c("r","p"),xlab="Herramienta",
+ylab="Tiempo",data=base1.1,auto.key = TRUE)
+```
+Posible interacción entre el Semestre y la herramienta
+
+```{r}
+mod1.1 = lmer(dif_minutos ~ tool*Pregunta + tool*Semestre + (1|id_est), base1.1)
+```
+
+
+##  Normalidad
+
+
+```{r}
+res1.1 = residuals(mod1.1)
+qqPlot(res1.1)
+```
+
+Se aplica la transformación de log(x)
+
+```{r}
+mod1.2 = mod1 = lmer(log(dif_minutos) ~ tool*Pregunta + tool*Semestre + (1|id_est), base1.1)
+res1.2 = residuals(mod1.2)
+qqPlot(res1.2)
+```
+
+## Homocedasticiadad
+
+```{r}
+fit1.1 = fitted(mod1.1)
+plot(fit1.1,res1.1,xlab = "Valores Ajustados",ylab = "Residuales")
+```
+
+
+```{r}
+leveneTest(res1.1 ~ base1.1$tool)
+```
+
+Según el gráfico parace que sin la transformación, hay problema con la homocedasticidad
+
+
+```{r}
+fit1.2 = fitted(mod1.2)
+plot(fit1.2,res1.2,xlab = "Valores Ajustados",ylab = "Residuales")
+mod1.2 = lmer(log(dif_minutos) ~ tool*Pregunta + tool*Semestre + (1|id_est), data =base1.1[res1.2>-2,])
+res1.3 = residuals(mod1.2)
+```
+
+```{r}
+leveneTest(res1.2 ~ base1.1$tool)
+```
+Aunque no pasa la prueba hay un valor que nos está afectando la prueba
+
+
+$$\log(y_{ijklmn} ) = \beta_0 + \alpha_i + \tau_j + \gamma_k + \omega_l + \delta_m + \epsilon_{ijklmn}$$
+## Ajustando el mejor modelo 
+
+
+
+## Modelo para la usabilidad
+
+### Interacción entre Herramienta y pregunta 
+
+```{r}
+xyplot(sus~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
+ylab="Tiempo",data=base1.1,auto.key = TRUE)
+```
+
+## Normalidad
+
+
+```{r}
+mod2.1 = lmer(sus ~ tool*Pregunta + tool*Semestre + (1|id_est), base1.1) #Está la opción de elevar al cubo.
+res2.1 = residuals(mod2.1)
+qqPlot(res2.1)
+```
+```{r}
+summary(powerTransform(mod2.1))
+```
+```{r}
+# lambda_optimo <- 2.7838
+# 
+# base1.1 <- base1.1 %>%
+#   mutate(
+#     sus_trans = (sus^lambda_optimo - 1) / lambda_optimo
+#   )
+# mod2.1_trans <- lmer(sus_trans ~ tool + Pregunta + Semestre + Grupo + (1|id_est), data = base1.1)
+# res2.1_trans = residuals(mod2.1_trans)
+# qqPlot(res2.1_trans)
+```
+
+
+Se hace una transformación con $\lambda = 3$ osea $\text{usabilidad}^3$
+
+```{r}
+mod2.2 = lmer(sus^3 ~ tool*Pregunta + tool*Semestre + (1|id_est), base1.1) 
+res2.2 = residuals(mod2.2)
+qqPlot(res2.2)
+```
+
+
+## Hocedasticidad
+
+```{r}
+fit2.1 = fitted(mod2.1)
+plot(fit2.1,res2.1, xlab = "Valores Ajustados",ylab = "Residuales")
+```
+`
+
+
+```{r}
+fit2.2 = fitted(mod2.2)
+plot(fit2.2,abs(res2.2),xlab = "Valores Ajustados",ylab = "Residuales")
+```
+```{r}
+leveneTest(res2.2 ~ interaction(base1.1$tool, base1.1$Semestre, base1.1$Pregunta))
+```
+
+
+```{r}
+
+```
+
+
