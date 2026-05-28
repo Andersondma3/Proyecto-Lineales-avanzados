@@ -19,13 +19,11 @@ library(lattice)
 library(lmtest)
 ```
 
-Tratamiento de base
+# Tratamiento de Base
 ```{r, warning=FALSE}
-setwd("C:/Users/Ander/OneDrive - Universidad de Costa Rica/Proyecto Avanzados - General/Bases")
+setwd("~/GitHub/Proyecto-Lineales-avanzados")
 base = read_excel("Base_Limpia.xlsx")
 ```
-
-# Modelo para la duración de las preguntas
 
 ```{r}
 base1.1 <- base %>%
@@ -44,9 +42,9 @@ base1.1$id_est = factor(base1.1$id_est)
 ```
 
 
-## Análisis de interacción
+## Pregunta 2
 
-### Interacción entre Herramienta y pregunta 
+### Interacción entre Herramienta y Pregunta 
 
 ```{r}
 xyplot(dif_minutos~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
@@ -55,7 +53,7 @@ ylab="Tiempo",data=base1.1,auto.key = TRUE)
 
 Posible interacción entre herramienta y la pregunta
 
-### Interacción entre Semestre y pregunta 
+### Interacción entre Semestre y Pregunta 
 
 ```{r}
 xyplot(dif_minutos~tool, groups = Semestre ,type=c("r","p"),xlab="Herramienta",
@@ -63,14 +61,21 @@ ylab="Tiempo",data=base1.1,auto.key = TRUE)
 ```
 Posible interacción entre el Semestre y la herramienta
 
-```{r}
-mod1.1 = lmer(dif_minutos ~ tool*Pregunta + tool*Semestre + (1|id_est), base1.1)
+
+### Modelo Pregunta 2
+
+```{r, message=FALSE}
+mod1.1 = lmer(dif_minutos ~ tool*Pregunta + tool*Semestre + (1|id_est), 
+              base1.1, REML = FALSE)
+drop1(mod1.1, test = "Chisq")
+```
+#### Modelo Final
+```{r, message=FALSE}
+mod1.1_final = lmer(dif_minutos ~ tool + Pregunta + Semestre + (1|id_est), base1.1)
 ```
 
 
-##  Normalidad
-
-
+###  Normalidad
 ```{r}
 res1.1 = residuals(mod1.1)
 qqPlot(res1.1)
@@ -79,106 +84,85 @@ qqPlot(res1.1)
 Se aplica la transformación de log(x)
 
 ```{r}
-mod1.2 = mod1 = lmer(log(dif_minutos) ~ tool*Pregunta + tool*Semestre + (1|id_est), base1.1)
+mod1.2 = lmer(log(dif_minutos) ~ tool + Pregunta + Semestre + (1|id_est), base1.1)
 res1.2 = residuals(mod1.2)
 qqPlot(res1.2)
 ```
-
-## Homocedasticiadad
-
+La única observación que sale fuera de lo normal es la 107 que resulta que indica lo siguiente.
 ```{r}
-fit1.1 = fitted(mod1.1)
-plot(fit1.1,res1.1,xlab = "Valores Ajustados",ylab = "Residuales")
+base1.1[107,]
 ```
+Este indica que en la pregunta 3 duró 1 minuto haciendolo. 
 
-
-```{r}
-leveneTest(res1.1 ~ base1.1$tool)
-```
-
-Según el gráfico parace que sin la transformación, hay problema con la homocedasticidad
-
+### Homocedasticidad
 
 ```{r}
 fit1.2 = fitted(mod1.2)
 plot(fit1.2,res1.2,xlab = "Valores Ajustados",ylab = "Residuales")
-mod1.2 = lmer(log(dif_minutos) ~ tool*Pregunta + tool*Semestre + (1|id_est), data =base1.1[res1.2>-2,])
-res1.3 = residuals(mod1.2)
 ```
+
 
 ```{r}
 leveneTest(res1.2 ~ base1.1$tool)
 ```
-Aunque no pasa la prueba hay un valor que nos está afectando la prueba
+Se utilizó la prueba de Levene y no la de Barlett porque esta es sumamente sensible a outliers por lo que rechaza muy fuerte la hipotesis de que hay homocedasticidad. 
+
+Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto de homocedasticidad.
 
 
 $$\log(y_{ijklmn} ) = \beta_0 + \alpha_i + \tau_j + \gamma_k + \omega_l + \delta_m + \epsilon_{ijklmn}$$
-## Ajustando el mejor modelo 
 
 
 
-## Modelo para la usabilidad
+## Pregunta 3
 
-### Interacción entre Herramienta y pregunta 
+### Interacción entre Herramienta y Pregunta 
 
 ```{r}
 xyplot(sus~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
 ylab="Tiempo",data=base1.1,auto.key = TRUE)
 ```
 
-## Normalidad
+### Modelo
+```{r}
+mod2.1 = lmer(sus ~ tool*Pregunta + tool*Semestre + (1|id_est), 
+              base1.1, REML = FALSE)
+drop1(mod2.1, test = "Chisq")
+```
+#### Modelo Final
+```{r}
+mod2.1_final = lmer(sus ~ tool + Pregunta + Semestre + (1|id_est), base1.1)
+```
 
+### Normalidad
 
 ```{r}
-mod2.1 = lmer(sus ~ tool*Pregunta + tool*Semestre + (1|id_est), base1.1) #Está la opción de elevar al cubo.
-res2.1 = residuals(mod2.1)
+res2.1 = residuals(mod2.1_final)
 qqPlot(res2.1)
 ```
+
 ```{r}
-summary(powerTransform(mod2.1))
+summary(powerTransform(mod2.1_final))
 ```
-```{r}
-# lambda_optimo <- 2.7838
-# 
-# base1.1 <- base1.1 %>%
-#   mutate(
-#     sus_trans = (sus^lambda_optimo - 1) / lambda_optimo
-#   )
-# mod2.1_trans <- lmer(sus_trans ~ tool + Pregunta + Semestre + Grupo + (1|id_est), data = base1.1)
-# res2.1_trans = residuals(mod2.1_trans)
-# qqPlot(res2.1_trans)
-```
-
-
-Se hace una transformación con $\lambda = 3$ osea $\text{usabilidad}^3$
+Se hace una transformación con $\lambda = 3$ osea $\text{usabilidad}^3$, ya que está dentro del intervalo. 
 
 ```{r}
-mod2.2 = lmer(sus^3 ~ tool*Pregunta + tool*Semestre + (1|id_est), base1.1) 
+mod2.2 = lmer(sus^3 ~ tool + Pregunta + Semestre + (1|id_est), base1.1) 
 res2.2 = residuals(mod2.2)
 qqPlot(res2.2)
 ```
-
-
-## Hocedasticidad
-
 ```{r}
-fit2.1 = fitted(mod2.1)
-plot(fit2.1,res2.1, xlab = "Valores Ajustados",ylab = "Residuales")
+shapiro.test(res2.2)
 ```
-`
+Aún cuando la prueba gráfica nos deja en duda, por la prueba de Shapiro-Wilk procedemos a no rechazar la normalidad.
 
+## Homocedasticidad
 
 ```{r}
 fit2.2 = fitted(mod2.2)
-plot(fit2.2,abs(res2.2),xlab = "Valores Ajustados",ylab = "Residuales")
+plot(fit2.2,res2.2,xlab = "Valores Ajustados",ylab = "Residuales")
 ```
 ```{r}
-leveneTest(res2.2 ~ interaction(base1.1$tool, base1.1$Semestre, base1.1$Pregunta))
+leveneTest(res2.2 ~ base1.1$tool)
 ```
-
-
-```{r}
-
-```
-
-
+Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto de homocedasticidad.
