@@ -22,7 +22,12 @@ library(lmtest)
 # Tratamiento de Base
 ```{r, warning=FALSE}
 setwd("~/GitHub/Proyecto-Lineales-avanzados")
-base = read_excel("Base_Limpia.xlsx")
+base = read_excel("base_completa.xlsx")
+#base = read_excel("Base_Limpia.xlsx")
+
+
+
+
 ```
 
 ```{r}
@@ -42,6 +47,50 @@ base1.1$id_est = factor(base1.1$id_est)
 ```
 
 
+
+```{r}
+
+tabla_final <- table(base1.1$Grupo, base1.1$Pregunta, is.na(base1.1$dif_minutos))
+
+tabla_final[, , "FALSE"]
+```
+
+
+```{r}
+table(base1.1$Pregunta[!is.na(base1.1$dif_minutos)])
+```
+
+
+
+```{r}
+estudiantes_con_na <- base1.1 %>% 
+  group_by(id_est) %>% 
+  filter(any(is.na(dif_minutos))) %>% 
+  ungroup()
+
+# Ver cuáles estudiantes son y cuántas preguntas les faltan
+estudiantes_con_na %>% 
+  group_by(id_est, Grupo, Semestre) %>% 
+  summarise(preguntas_con_NA = sum(is.na(dif_minutos)), .groups = "drop")
+```
+
+
+
+
+`
+
+
+### Distribución de datos por Grupo y Semestre
+
+```{r}
+table(base1.1$Grupo, base1.1$Semestre)
+```
+
+
+
+
+
+
 ## Pregunta 2
 
 ### Interacción entre Herramienta y Pregunta 
@@ -53,7 +102,7 @@ ylab="Tiempo",data=base1.1,auto.key = TRUE)
 
 Posible interacción entre herramienta y la pregunta
 
-### Interacción entre Semestre y Pregunta 
+### Interacción entre Semestre y Herramienta 
 
 ```{r}
 xyplot(dif_minutos~tool, groups = Semestre ,type=c("r","p"),xlab="Herramienta",
@@ -62,10 +111,24 @@ ylab="Tiempo",data=base1.1,auto.key = TRUE)
 Posible interacción entre el Semestre y la herramienta
 
 
+### Interacción entre Herramienta y Grupo
+
+
+```{r}
+xyplot(dif_minutos~tool, groups = Grupo ,type=c("r","p"),xlab="Herramienta",
+ylab="Tiempo",data=base1.1,auto.key = TRUE)
+```
+
+
+
+
+
+
+
 ### Modelo Pregunta 2
 
 ```{r, message=FALSE}
-mod1.1 = lmer(dif_minutos ~ tool*Pregunta + tool*Semestre + (1|id_est), 
+mod1.1 = lmer(dif_minutos ~ tool*Pregunta + tool*Semestre+ tool*Grupo + (1|id_est), 
               base1.1, REML = FALSE)
 drop1(mod1.1, test = "Chisq")
 ```
@@ -166,3 +229,35 @@ plot(fit2.2,res2.2,xlab = "Valores Ajustados",ylab = "Residuales")
 leveneTest(res2.2 ~ base1.1$tool)
 ```
 Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto de homocedasticidad.
+
+
+
+# Comparación con el R^2 del modelo con y sin el grupo 
+
+*Modelo sin grupo*
+
+```{r, message=FALSE}
+mod3.1 = lmer(dif_minutos ~ tool*Pregunta + tool*Semestre+ (1|id_est), 
+              base1.1, REML = FALSE)
+drop1(mod3.1, test = "Chisq")
+```
+
+
+*Modelo con grupo*
+
+
+```{r, message=FALSE}
+mod3.2 = lmer(dif_minutos ~ tool*Pregunta + tool*Semestre+ tool*Grupo + (1|id_est), 
+              base1.1, REML = FALSE)
+drop1(mod1.1, test = "Chisq")
+```
+
+
+
+```{r}
+#install.packages("MuMIn")
+library(MuMIn)
+r.squaredGLMM(mod3.1) #Sin Grupo
+r.squaredGLMM(mod3.2) # Con Grupo
+```
+
