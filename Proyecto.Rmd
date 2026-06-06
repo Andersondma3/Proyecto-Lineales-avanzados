@@ -50,9 +50,17 @@ base1.1$id_est = factor(base1.1$id_est)
 
 ```{r}
 
-tabla_final <- table(base1.1$Grupo, base1.1$Pregunta, is.na(base1.1$dif_minutos))
+tabla_final <- table(
+  Grupo = base1.1$Grupo, 
+  Pregunta = base1.1$Pregunta, 
+  Falta_US = is.na(base1.1$dif_minutos)
+)
 
 tabla_final[, , "FALSE"]
+```
+
+```{r}
+table(base1.1$Grupo[!is.na(base1.1$us)])
 ```
 
 
@@ -76,8 +84,14 @@ estudiantes_con_na %>%
 
 
 
+```{r}
+conteo_estudiantes <- base1.1 %>%
+  distinct(id_est, Semestre, Grupo) %>%  # Nos quedamos solo con estudiantes únicos por grupo/semestre
+  count(Semestre, Grupo, name = "Total_Estudiantes")
 
-`
+print(conteo_estudiantes)
+```
+
 
 
 ### Distribución de datos por Grupo y Semestre
