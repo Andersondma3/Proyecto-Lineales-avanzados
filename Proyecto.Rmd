@@ -22,8 +22,8 @@ library(lmtest)
 # Tratamiento de Base
 ```{r, warning=FALSE}
 setwd("~/GitHub/Proyecto-Lineales-avanzados")
-base = read_excel("base_completa.xlsx")
-#base = read_excel("Base_Limpia.xlsx")
+#base = read_excel("base_completa.xlsx")
+base = read_excel("Base_Limpia.xlsx")
 
 
 
@@ -214,23 +214,15 @@ $$\log(y_{ijklmn} ) = \beta_0 + \alpha_i + \tau_j + \gamma_k + \omega_l + \delta
 xyplot(sus~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
 ylab="Tiempo",data=base1.1,auto.key = TRUE)
 ```
-
+Gráfico por persona en el eje x 
 
 ```{r}
 xyplot(sus~Pregunta, groups = tool ,type=c("r","p"),xlab="Preguntas",
 ylab="Usabilidad",data=base1.1,auto.key = TRUE)
 ```
+
 ```{r}
-base1.1$tool <- as.factor(base1.1$tool)
-num_herramientas <- length(levels(base1.1$tool))
-boxplot(sus ~ Pregunta * tool, 
-        data = base1.1,
-        # 'col' repetirá la paleta para cada bloque de preguntas
-        col = rep(c("#1f77b4", "#d62728")[1:num_herramientas], each = length(unique(base1.1$Pregunta))),
-        las = 2,
-        main = "SUS por Pregunta y Herramienta",
-        xlab = "", 
-        ylab = "Escala SUS")
+xyplot(sus~id_est|Semestre, groups = tool, data = base1.1)
 ```
 
 
@@ -254,6 +246,35 @@ mod2.3 = lmer(sus^3 ~ Pregunta + tool+ Semestre + (1|id_est),
 drop1(mod2.3, test = "Chisq")
 ```
 
+
+```{r}
+base1.1$tool <- as.factor(base1.1$tool)
+num_herramientas <- length(levels(base1.1$tool))
+boxplot(sus ~ Pregunta * tool, 
+        data = base1.1,
+        # 'col' repetirá la paleta para cada bloque de preguntas
+        col = rep(c("#1f77b4", "#d62728")[1:num_herramientas], each = length(unique(base1.1$Pregunta))),
+        las = 2,
+        main = "SUS por Pregunta y Herramienta CENTRADO",
+        xlab = "", 
+        ylab = "Escala SUS")
+```
+
+
+
+```{r}
+pre = predict(mod2.3)
+base1.1$sus_centrado = base1.1$sus-pre+mean(base1.1$sus)
+num_herramientas <- length(levels(base1.1$tool))
+boxplot(sus_centrado ~ Pregunta * tool, 
+        data = base1.1,
+        # 'col' repetirá la paleta para cada bloque de preguntas
+        col = rep(c("#1f77b4", "#d62728")[1:num_herramientas], each = length(unique(base1.1$Pregunta))),
+        las = 2,
+        main = "SUS por Pregunta y Herramienta CENTRADO",
+        xlab = "", 
+        ylab = "Escala SUS")
+```
 
 
 ### Normalidad
