@@ -209,14 +209,35 @@ $$\log(y_{ijklmn} ) = \beta_0 + \alpha_i + \tau_j + \gamma_k + \omega_l + \delta
 
 ## Pregunta 3
 
-### Interacción entre Herramienta y Pregunta 
 
 ```{r}
 xyplot(sus~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
 ylab="Tiempo",data=base1.1,auto.key = TRUE)
 ```
 
+
+```{r}
+xyplot(sus~Pregunta, groups = tool ,type=c("r","p"),xlab="Preguntas",
+ylab="Usabilidad",data=base1.1,auto.key = TRUE)
+```
+```{r}
+base1.1$tool <- as.factor(base1.1$tool)
+num_herramientas <- length(levels(base1.1$tool))
+boxplot(sus ~ Pregunta * tool, 
+        data = base1.1,
+        # 'col' repetirá la paleta para cada bloque de preguntas
+        col = rep(c("#1f77b4", "#d62728")[1:num_herramientas], each = length(unique(base1.1$Pregunta))),
+        las = 2,
+        main = "SUS por Pregunta y Herramienta",
+        xlab = "", 
+        ylab = "Escala SUS")
+```
+
+
+
 ### Modelo
+
+
 ```{r}
 mod2.1 = lmer(sus^3 ~ tool*Pregunta + tool*Semestre + (1|id_est), 
               base1.1)
@@ -247,6 +268,8 @@ mod2.1_final = lmer(sus ~ Pregunta + tool+ Semestre + (1|id_est),
               base1.1)
 summary(powerTransform(mod2.1_final))
 ```
+
+
 Se hace una transformación con $\lambda = 3$ osea $\text{usabilidad}^3$, ya que está dentro del intervalo. 
 
 
@@ -268,7 +291,7 @@ Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto
 
 ---
 
-# Modelo sin interacción con grupo (para la pregunta 2)
+# Modelo sin grupo (para la pregunta 2)
 
 *Considere estos dos estudiantes que presentaron valores extraños*
 
@@ -278,7 +301,7 @@ base1.1[110,] # 1 hora y media
 ```
 
 ```{r}
-#base1.12 <- base1.1[-c(110, 163), ]
+base1.12 <- base1.1[-c(110, 163), ]
 ```
 
 
@@ -296,7 +319,7 @@ drop1(mod3.2, test = "Chisq")
 
 ```{r}
 mod3.3=lmer(log(dif_minutos) ~ Pregunta + tool+ Semestre + (1|id_est), 
-              base1.1)
+              base1.12)
 drop1(mod3.3, test = "Chisq")
 ```
 
