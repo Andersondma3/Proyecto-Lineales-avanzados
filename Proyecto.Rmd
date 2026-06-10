@@ -60,7 +60,7 @@ tabla_final[, , "FALSE"]
 ```
 
 ```{r}
-table(base1.1$Grupo[!is.na(base1.1$us)])
+table(base1.1$Grupo[!is.na(base1.1$sus)])
 ```
 
 
@@ -88,6 +88,13 @@ estudiantes_con_na %>%
 conteo_estudiantes <- base1.1 %>%
   distinct(id_est, Semestre, Grupo) %>%  # Nos quedamos solo con estudiantes únicos por grupo/semestre
   count(Semestre, Grupo, name = "Total_Estudiantes")
+
+print(conteo_estudiantes)
+```
+```{r}
+conteo_estudiantes <- base1.1 %>%
+  distinct(id_est, Semestre) %>%  # Nos quedamos solo con estudiantes únicos por grupo/semestre
+  count(Semestre, name = "Total_Estudiantes")
 
 print(conteo_estudiantes)
 ```
@@ -122,6 +129,8 @@ Posible interacción entre herramienta y la pregunta
 xyplot(dif_minutos~tool, groups = Semestre ,type=c("r","p"),xlab="Herramienta",
 ylab="Tiempo",data=base1.1,auto.key = TRUE)
 ```
+
+
 Posible interacción entre el Semestre y la herramienta
 
 
@@ -146,6 +155,9 @@ mod1.1 = lmer(dif_minutos ~ tool*Pregunta + tool*Semestre+ tool*Grupo + (1|id_es
               base1.1, REML = FALSE)
 drop1(mod1.1, test = "Chisq")
 ```
+
+
+
 #### Modelo Final
 ```{r, message=FALSE}
 mod1.1_final = lmer(dif_minutos ~ tool + Pregunta + Semestre + (1|id_est), base1.1)
@@ -165,7 +177,11 @@ mod1.2 = lmer(log(dif_minutos) ~ tool + Pregunta + Semestre + (1|id_est), base1.
 res1.2 = residuals(mod1.2)
 qqPlot(res1.2)
 ```
+
+
 La única observación que sale fuera de lo normal es la 107 que resulta que indica lo siguiente.
+
+
 ```{r}
 base1.1[107,]
 ```
@@ -202,51 +218,109 @@ ylab="Tiempo",data=base1.1,auto.key = TRUE)
 
 ### Modelo
 ```{r}
-mod2.1 = lmer(sus ~ tool*Pregunta + tool*Semestre + (1|id_est), 
-              base1.1, REML = FALSE)
+mod2.1 = lmer(sus^3 ~ tool*Pregunta + tool*Semestre + (1|id_est), 
+              base1.1)
 drop1(mod2.1, test = "Chisq")
 ```
-#### Modelo Final
 ```{r}
-mod2.1_final = lmer(sus ~ tool + Pregunta + Semestre + (1|id_est), base1.1)
+mod2.2 = lmer(sus^3 ~ Pregunta + tool*Semestre + (1|id_est), 
+              base1.1)
+drop1(mod2.2, test = "Chisq")
 ```
+```{r}
+mod2.3 = lmer(sus^3 ~ Pregunta + tool+ Semestre + (1|id_est), 
+              base1.1)
+drop1(mod2.3, test = "Chisq")
+```
+
+
 
 ### Normalidad
 
 ```{r}
-res2.1 = residuals(mod2.1_final)
-qqPlot(res2.1)
+res2.3 = residuals(mod2.3)
+qqPlot(res2.3)
 ```
 
 ```{r}
+mod2.1_final = lmer(sus ~ Pregunta + tool+ Semestre + (1|id_est), 
+              base1.1)
 summary(powerTransform(mod2.1_final))
 ```
 Se hace una transformación con $\lambda = 3$ osea $\text{usabilidad}^3$, ya que está dentro del intervalo. 
 
+
 ```{r}
-mod2.2 = lmer(sus^3 ~ tool + Pregunta + Semestre + (1|id_est), base1.1) 
-res2.2 = residuals(mod2.2)
-qqPlot(res2.2)
-```
-```{r}
-shapiro.test(res2.2)
+shapiro.test(res2.3)
 ```
 Aún cuando la prueba gráfica nos deja en duda, por la prueba de Shapiro-Wilk procedemos a no rechazar la normalidad.
 
 ## Homocedasticidad
 
 ```{r}
-fit2.2 = fitted(mod2.2)
-plot(fit2.2,res2.2,xlab = "Valores Ajustados",ylab = "Residuales")
+fit2.3 = fitted(mod2.3)
+plot(fit2.3,res2.3,xlab = "Valores Ajustados",ylab = "Residuales")
 ```
 ```{r}
-leveneTest(res2.2 ~ base1.1$tool)
+leveneTest(res2.3 ~ model.frame(mod2.3)$tool)
 ```
 Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto de homocedasticidad.
 
+---
+
+# Modelo sin interacción con grupo (para la pregunta 2)
+
+*Considere estos dos estudiantes que presentaron valores extraños*
+
+```{r}
+base1.1[163,] # 1 minuto de duración
+base1.1[110,] # 1 hora y media
+```
+
+```{r}
+#base1.12 <- base1.1[-c(110, 163), ]
+```
 
 
-# Comparación con el R^2 del modelo con y sin el grupo 
+```{r}
+mod3.1 = lmer(log(dif_minutos) ~ tool*Pregunta + tool*Semestre + (1|id_est), 
+              base1.1)
+drop1(mod3.1, test = "Chisq")
+```
+
+```{r}
+mod3.2 = lmer(log(dif_minutos) ~ Pregunta + tool*Semestre + (1|id_est), 
+              base1.1)
+drop1(mod3.2, test = "Chisq")
+```
+
+```{r}
+mod3.3=lmer(log(dif_minutos) ~ Pregunta + tool+ Semestre + (1|id_est), 
+              base1.1)
+drop1(mod3.3, test = "Chisq")
+```
+
+
+
+###  Normalidad
+```{r}
+res3.3 = residuals(mod3.3)
+qqPlot(res3.3)
+```
+
+
+```{r}
+fit3.3 = fitted(mod3.3)
+plot(fit3.3,res3.3,xlab = "Valores Ajustados",ylab = "Residuales")
+```
+
+```{r}
+leveneTest(res3.3 ~ model.frame(mod3.3)$tool)
+```
+
+# Modelo para usabilidad 
+
+
 
 *Modelo sin grupo*
 
