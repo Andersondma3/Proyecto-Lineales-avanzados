@@ -28,6 +28,8 @@ setwd("~/GitHub/Proyecto-Lineales-avanzados")
 base = read_excel("Base_Limpia.xlsx")
 ```
 
+
+
 ```{r}
 base1.1 <- base %>%
   mutate(
@@ -53,6 +55,10 @@ base1.1 <- base1.1 %>%
     Semestre == "b" & Grupo == 3 ~ 6
   )) 
 base1.1$Grupo_1 = factor(base1.1$Grupo_1)
+```
+
+```{r}
+base1.1 = base1.1[base1.1$id_est != "s13",]
 ```
 
 
@@ -182,7 +188,7 @@ drop1(mod1.4, test = "Chisq")
 
 
 ```{r, message=FALSE}
-mod1.final = lmer(log(dif_minutos) ~ tool+Pregunta + Grupo + (1|id_est), 
+mod1.final = lmer(log(dif_minutos) ~ tool+Pregunta + Grupo_1 + (1|id_est), 
                   data = base1.1)
 
 drop1(mod1.final, test = "Chisq")
@@ -198,13 +204,7 @@ qqPlot(res1.1)
 ```
 
 
-La única observación que sale fuera de lo normal es la 107 que resulta que indica lo siguiente.
 
-
-```{r}
-base1.1[107,]
-```
-Este indica que en la pregunta 3 duró 1 minuto haciendolo. 
 
 ### Homocedasticidad
 
@@ -217,9 +217,7 @@ plot(fit1.2,res1.1,xlab = "Valores Ajustados",ylab = "Residuales")
 ```{r}
 leveneTest(res1.1 ~ base1.1$tool)
 ```
-Se utilizó la prueba de Levene y no la de Barlett porque esta es sumamente sensible a outliers por lo que rechaza muy fuerte la hipotesis de que hay homocedasticidad. 
 
-Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto de homocedasticidad.
 
 
 $$\log(y_{ijklmn} ) = \beta_0 + \alpha_i + \tau_j + \gamma_k + \omega_l + \delta_m + \epsilon_{ijklmn}$$
@@ -318,7 +316,25 @@ Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto
 ---
 
 
+## Intervalos de Confianza
+```{r}
+confint(mod1.final)
+```
 
+
+```{r}
+library(emmeans)
+em = emmeans(mod1.final, ~ Grupo_1)
+em
+```
+
+```{r}
+confint(mod2.4)
+```
+```{r}
+em = emmeans(mod2.4, ~ tool)
+em
+```
 
 
 
