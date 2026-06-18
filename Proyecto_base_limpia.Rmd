@@ -1,0 +1,324 @@
+---
+title: "Modelo_Proyecto"
+author: "Sebastián Calvo"
+date: "2026-05-27"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Librerías
+
+```{r, message = FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(lubridate)
+library(hms)
+library(lme4)
+library(car)
+library(MASS)
+library(lattice)
+library(lmtest)
+```
+
+# Tratamiento de Base
+```{r, warning=FALSE}
+setwd("~/GitHub/Proyecto-Lineales-avanzados")
+#base = read_excel("base_completa.xlsx")
+base = read_excel("Base_Limpia.xlsx")
+```
+
+```{r}
+base1.1 <- base %>%
+  mutate(
+    ti_hora  = as_hms(ti),
+    tf_hora  = as_hms(tf),
+    dif_hora = as_hms(dif),
+    dif_minutos = as.numeric(difftime(tf, ti, units = "mins"))
+  )
+
+base1.1$tool = factor(base1.1$tool)
+base1.1$Pregunta = factor(base1.1$Pregunta)
+base1.1$Semestre = factor(base1.1$Semestre)
+base1.1$Grupo = factor(base1.1$Grupo)
+base1.1$id_est = factor(base1.1$id_est)
+
+base1.1 <- base1.1 %>%
+  mutate(Grupo_1 = case_when(
+    Semestre == "a" & Grupo == 1 ~ 1,
+    Semestre == "a" & Grupo == 2 ~ 2,
+    Semestre == "a" & Grupo == 3 ~ 3,
+    Semestre == "b" & Grupo == 1 ~ 4,
+    Semestre == "b" & Grupo == 2 ~ 5,
+    Semestre == "b" & Grupo == 3 ~ 6
+  )) 
+base1.1$Grupo_1 = factor(base1.1$Grupo_1)
+```
+
+
+
+```{r}
+
+tabla_final <- table(
+  Grupo = base1.1$Grupo, 
+  Pregunta = base1.1$Pregunta, 
+  Falta_US = is.na(base1.1$dif_minutos)
+)
+
+tabla_final[, , "FALSE"]
+```
+
+```{r}
+table(base1.1$Grupo[!is.na(base1.1$sus)])
+```
+
+
+```{r}
+table(base1.1$Pregunta[!is.na(base1.1$dif_minutos)])
+```
+
+
+
+```{r}
+estudiantes_con_na <- base1.1 %>% 
+  group_by(id_est) %>% 
+  filter(any(is.na(dif_minutos))) %>% 
+  ungroup()
+
+# Ver cuáles estudiantes son y cuántas preguntas les faltan
+estudiantes_con_na %>% 
+  group_by(id_est, Grupo, Semestre) %>% 
+  summarise(preguntas_con_NA = sum(is.na(dif_minutos)), .groups = "drop")
+```
+
+
+
+```{r}
+conteo_estudiantes <- base1.1 %>%
+  distinct(id_est, Semestre, Grupo) %>%  # Nos quedamos solo con estudiantes únicos por grupo/semestre
+  count(Semestre, Grupo, name = "Total_Estudiantes")
+
+print(conteo_estudiantes)
+```
+```{r}
+conteo_estudiantes <- base1.1 %>%
+  distinct(id_est, Semestre) %>%  # Nos quedamos solo con estudiantes únicos por grupo/semestre
+  count(Semestre, name = "Total_Estudiantes")
+
+print(conteo_estudiantes)
+```
+
+
+
+### Distribución de datos por Grupo y Semestre
+
+```{r}
+table(base1.1$Grupo, base1.1$Semestre)
+```
+
+
+
+
+
+
+# Modelo 2 (para el tiempo de respuestas entre preguntas)
+
+## Interacciones
+
+### Interacción entre Herramienta y Pregunta 
+
+```{r}
+xyplot(dif_minutos~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
+ylab="Tiempo",data=base1.1,auto.key = TRUE)
+```
+
+Posible interacción entre herramienta y la pregunta
+
+### Interacción entre Semestre y Herramienta 
+
+```{r}
+xyplot(dif_minutos~tool, groups = Semestre ,type=c("r","p"),xlab="Herramienta",
+ylab="Tiempo",data=base1.1,auto.key = TRUE)
+```
+
+
+Posible interacción entre el Semestre y la herramienta
+
+
+### Interacción entre Herramienta y Grupo
+
+
+```{r}
+xyplot(dif_minutos~tool, groups = Grupo_1 ,type=c("r","p"),xlab="Herramienta",
+ylab="Tiempo",data=base1.1,auto.key = TRUE)
+```
+
+
+## Creación del modelo 
+
+```{r}
+mod1.1 = lmer(log(dif_minutos) ~ tool*Pregunta + tool*Semestre +tool*Grupo_1 + (1|id_est), 
+                  data = base1.1)
+drop1(mod1.1, test = "Chisq")
+```
+
+```{r}
+mod1.2 = lmer(log(dif_minutos) ~ Pregunta + tool*Semestre +tool*Grupo_1 + (1|id_est), 
+                  data = base1.1)
+drop1(mod1.2, test = "Chisq")
+```
+
+```{r}
+mod1.3 = lmer(log(dif_minutos) ~ Pregunta + tool*Semestre + Grupo_1 + (1|id_est), 
+                  data = base1.1)
+drop1(mod1.3, test = "Chisq")
+```
+
+```{r}
+mod1.4 = lmer(log(dif_minutos) ~ tool+ Pregunta + Semestre + Grupo_1 + (1|id_est), 
+                  data = base1.1)
+drop1(mod1.4, test = "Chisq")
+```
+
+
+```{r, message=FALSE}
+mod1.final = lmer(log(dif_minutos) ~ tool+Pregunta + Grupo + (1|id_est), 
+                  data = base1.1)
+
+drop1(mod1.final, test = "Chisq")
+```
+`
+
+## Supuestos 
+
+###  Normalidad
+```{r}
+res1.1 = residuals(mod1.final)
+qqPlot(res1.1)
+```
+
+
+La única observación que sale fuera de lo normal es la 107 que resulta que indica lo siguiente.
+
+
+```{r}
+base1.1[107,]
+```
+Este indica que en la pregunta 3 duró 1 minuto haciendolo. 
+
+### Homocedasticidad
+
+```{r}
+fit1.2 = fitted(mod1.final)
+plot(fit1.2,res1.1,xlab = "Valores Ajustados",ylab = "Residuales")
+```
+
+
+```{r}
+leveneTest(res1.1 ~ base1.1$tool)
+```
+Se utilizó la prueba de Levene y no la de Barlett porque esta es sumamente sensible a outliers por lo que rechaza muy fuerte la hipotesis de que hay homocedasticidad. 
+
+Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto de homocedasticidad.
+
+
+$$\log(y_{ijklmn} ) = \beta_0 + \alpha_i + \tau_j + \gamma_k + \omega_l + \delta_m + \epsilon_{ijklmn}$$
+
+# Modelo 3 (modelo de usabilidad)
+
+
+
+```{r}
+xyplot(sus~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
+ylab="Tiempo",data=base1.1,auto.key = TRUE)
+```
+Gráfico por persona en el eje x 
+
+```{r}
+xyplot(sus~Grupo_1, groups = tool ,type=c("r","p"),xlab="Preguntas",
+ylab="Usabilidad",data=base1.1,auto.key = TRUE)
+```
+
+
+
+
+
+## Creación del modelo 
+
+```{r}
+mod2.1 = lmer(sus^3~tool*Grupo_1+tool*Pregunta+tool*Semestre+ (1|id_est), data = base1.1)
+drop1(mod2.1, test = "Chisq")
+```
+
+
+
+```{r}
+mod2.2 = lmer(sus^3~tool*Grupo_1+tool*Pregunta+Semestre+ (1|id_est), data = base1.1)
+drop1(mod2.2, test = "Chisq")
+```
+
+
+```{r}
+mod2.3 = lmer(sus^3~tool*Grupo_1+Pregunta+Semestre+ (1|id_est), data = base1.1)
+drop1(mod2.3, test = "Chisq")
+```
+
+```{r}
+mod2.4 = lmer(sus^3~tool*Grupo_1+Pregunta+ (1|id_est), data = base1.1)
+drop1(mod2.4, test = "Chisq")
+```
+
+
+```{r}
+pre = predict(mod2.4)
+base1.1$sus_centrado = base1.1$sus-pre+mean(base1.1$sus)
+num_herramientas <- length(levels(base1.1$Grupo_1))
+boxplot(sus_centrado ~ Pregunta * Grupo_1, 
+        data = base1.1,
+        # 'col' repetirá la paleta para cada bloque de preguntas
+        col = rep(c("#1f77b4", "#d62728")[1:num_herramientas], each = length(unique(base1.1$Pregunta))),
+        las = 2,
+        main = "SUS por Pregunta y Grupo CENTRADO",
+        xlab = "", 
+        ylab = "Escala SUS")
+```
+
+
+## Supuestos
+
+
+### Normalidad
+
+```{r}
+res2.3 = residuals(mod2.4)
+qqPlot(res2.3)
+```
+
+
+
+Se hace una transformación con $\lambda = 3$ osea $\text{usabilidad}^3$, ya que está dentro del intervalo. 
+
+
+```{r}
+shapiro.test(res2.3)
+```
+Aún cuando la prueba gráfica nos deja en duda, por la prueba de Shapiro-Wilk procedemos a no rechazar la normalidad.
+
+## Homocedasticidad
+
+```{r}
+fit2.3 = fitted(mod2.4)
+plot(fit2.3,res2.3,xlab = "Valores Ajustados",ylab = "Residuales")
+```
+```{r}
+leveneTest(res2.3 ~ model.frame(mod2.4)$tool)
+```
+Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto de homocedasticidad.
+
+---
+
+
+
+
+
+
