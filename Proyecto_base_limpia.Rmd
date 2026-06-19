@@ -58,7 +58,7 @@ base1.1$Grupo_1 = factor(base1.1$Grupo_1)
 ```
 
 ```{r}
-base1.1 = base1.1[base1.1$id_est != "s13",]
+base1.1 = base1.1[!base1.1$id_est %in% c("s13", "s05"), ]
 ```
 
 
@@ -86,6 +86,8 @@ table(base1.1$Pregunta[!is.na(base1.1$dif_minutos)])
 
 
 ```{r}
+library(tidyr)
+library(dplyr)
 estudiantes_con_na <- base1.1 %>% 
   group_by(id_est) %>% 
   filter(any(is.na(dif_minutos))) %>% 
@@ -101,8 +103,8 @@ estudiantes_con_na %>%
 
 ```{r}
 conteo_estudiantes <- base1.1 %>%
-  distinct(id_est, Semestre, Grupo) %>%  # Nos quedamos solo con estudiantes únicos por grupo/semestre
-  count(Semestre, Grupo, name = "Total_Estudiantes")
+  distinct(id_est, Semestre, Grupo_1) %>%  # Nos quedamos solo con estudiantes únicos por grupo/semestre
+  count(Semestre, Grupo_1, name = "Total_Estudiantes")
 
 print(conteo_estudiantes)
 ```
@@ -324,17 +326,31 @@ confint(mod1.final)
 
 ```{r}
 library(emmeans)
-em = emmeans(mod1.final, ~ Grupo_1)
-em
+em = emmeans(mod1.final,pairwise ~ Grupo_1)
+em$contrasts
 ```
 
 ```{r}
 confint(mod2.4)
 ```
 ```{r}
-em = emmeans(mod2.4, ~ tool)
-em
+em2 = emmeans(mod2.4,pairwise ~ tool|Grupo_1)
+em2$contrasts
 ```
 
+## Conteo
+```{r}
+library(dplyr)
+library(tidyr)
+
+estudiantes_por_combinacion <- base1.1 %>%
+  arrange(id_est, Pregunta) %>%
+  group_by(id_est) %>%
+  summarise(combinacion = paste(tool, collapse = "")) %>%
+  group_by(combinacion) %>%
+  summarise(n_estudiantes = n())
+
+print(estudiantes_por_combinacion)
+```
 
 
