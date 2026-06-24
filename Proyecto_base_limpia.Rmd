@@ -202,7 +202,7 @@ drop1(mod1.final, test = "Chisq")
 ###  Normalidad
 ```{r}
 res1.1 = residuals(mod1.final)
-qqPlot(res1.1)
+qqPlot(res1.1,xlab = "Quantiles normales", ylab = "Residuales", main = "QQ-Plot para el modelo del tiempo de respuesta entre problemas")
 ```
 
 
@@ -212,7 +212,8 @@ qqPlot(res1.1)
 
 ```{r}
 fit1.2 = fitted(mod1.final)
-plot(fit1.2,res1.1,xlab = "Valores Ajustados",ylab = "Residuales")
+# plot(fit1.2,res1.1,xlab = "Valores Ajustados",ylab = "Residuales",2.4)
+plot(fit1.2,res1.1,xlab = "Valores Ajustados",ylab = "Residuales", main = "Gráfico de residuales contra valores ajustados, del \nmodelo sobre el tiempo de respuesta entre problemas")
 ```
 
 
@@ -221,8 +222,52 @@ leveneTest(res1.1 ~ base1.1$tool)
 ```
 
 
+## Intervalos de Confianza
+```{r}
+confint(mod1.final)
+```
 
-$$\log(y_{ijklmn} ) = \beta_0 + \alpha_i + \tau_j + \gamma_k + \omega_l + \delta_m + \epsilon_{ijklmn}$$
+
+```{r}
+library(emmeans)
+em = emmeans(mod1.final,pairwise ~ Grupo_1, adjust = "Tukey")
+em$contrasts
+```
+
+
+```{r}
+confint(em$contrasts, type = "response")
+```
+
+
+
+
+```{r}
+preg = emmeans(mod1.final,pairwise ~ Pregunta, adjust = "Tukey")
+diff = preg$contrasts
+confint(diff, type = "response")
+```
+
+
+
+
+```{r}
+# 1. Convertimos a data.frame para manipularlo con seguridad
+df_contrasts <- as.data.frame(preg$contrasts)
+
+# Opción A: Extraer por posición (si estás 100% seguro de las filas)
+# La columna se llama "estimate"
+d <- df_contrasts$estimate[c(1, 5)]
+ee <- df_contrasts$SE[c(1, 5)]
+gl <- 101
+t = qt(1-0.05/2*length(d),gl)
+ic = cbind(d-t*ee,d+t*ee)
+round(ic,3)
+```
+
+
+
+
 
 # Modelo 3 (modelo de usabilidad)
 
@@ -291,7 +336,7 @@ boxplot(sus_centrado ~ Pregunta * Grupo_1,
 
 ```{r}
 res2.3 = residuals(mod2.4)
-qqPlot(res2.3)
+qqPlot(res2.3,xlab = "Quantiles normales", ylab = "Residuales", main = "QQ-Plot para el modelo de usabilidad de las herramientas")
 ```
 
 
@@ -304,11 +349,11 @@ shapiro.test(res2.3)
 ```
 Aún cuando la prueba gráfica nos deja en duda, por la prueba de Shapiro-Wilk procedemos a no rechazar la normalidad.
 
-## Homocedasticidad
+### Homocedasticidad
 
 ```{r}
 fit2.3 = fitted(mod2.4)
-plot(fit2.3,res2.3,xlab = "Valores Ajustados",ylab = "Residuales")
+plot(fit2.3,res2.3,xlab = "Valores Ajustados",ylab = "Residuales", main = "Gráfico de residuales contra valores ajustados, del \nmodelo de usabilidad de las herramientas")
 ```
 ```{r}
 leveneTest(res2.3 ~ model.frame(mod2.4)$tool)
@@ -318,17 +363,7 @@ Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto
 ---
 
 
-## Intervalos de Confianza
-```{r}
-confint(mod1.final)
-```
 
-
-```{r}
-library(emmeans)
-em = emmeans(mod1.final,pairwise ~ Grupo_1)
-em$contrasts
-```
 
 ```{r}
 confint(mod2.4)
@@ -338,7 +373,7 @@ em2 = emmeans(mod2.4,pairwise ~ tool|Grupo_1)
 em2$contrasts
 ```
 
-## Conteo
+# Conteo de combinaciones únicas
 ```{r}
 library(dplyr)
 library(tidyr)
