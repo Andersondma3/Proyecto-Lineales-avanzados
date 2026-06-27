@@ -240,7 +240,7 @@ confint(em$contrasts, type = "response")
 ```
 
 
-
+### Tabla 3
 
 ```{r}
 preg = emmeans(mod1.final,pairwise ~ Pregunta, adjust = "Tukey")
@@ -368,6 +368,10 @@ Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto
 ```{r}
 confint(mod2.4)
 ```
+
+
+Tabla
+
 ```{r}
 em2 = emmeans(mod2.4,pairwise ~ tool|Grupo_1)
 em2$contrasts
