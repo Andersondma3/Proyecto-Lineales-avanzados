@@ -136,29 +136,92 @@ table(base1.1$Grupo, base1.1$Semestre)
 ### Interacción entre Herramienta y Pregunta 
 
 ```{r}
-xyplot(dif_minutos~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
-ylab="Tiempo",data=base1.1,auto.key = TRUE)
+xyplot(dif_minutos ~ tool, 
+       groups = Pregunta, 
+       type = c("r", "p"),
+       xlab = "Herramienta",
+       ylab = "Tiempo",
+       main = "Interacción entre la herramienta y el tipo de problema",
+       data = base1.1,
+       par.settings = list(
+         # Cambia la fuente de todo el gráfico de una sola vez
+         grid.pars = list(fontfamily = "serif"), 
+         key.title = list(cex = 0.2, font = 1) 
+       ),
+       auto.key = list(
+         title = expression(Problema),
+         cex.title = 1.2, 
+         space = "right"
+       ))
 ```
+
+
 
 Posible interacción entre herramienta y la pregunta
 
-### Interacción entre Semestre y Herramienta 
 
 ```{r}
-xyplot(dif_minutos~tool, groups = Semestre ,type=c("r","p"),xlab="Herramienta",
-ylab="Tiempo",data=base1.1,auto.key = TRUE)
+xyplot(dif_minutos ~ Pregunta, 
+       groups = tool, 
+       type = c("r", "p"),
+       xlab = "Herramienta",
+       ylab = "Tiempo",
+       main = "Interacción entre la herramienta y el tipo de problema",
+       data = base1.1,
+       par.settings = list(
+         # Cambia la fuente de todo el gráfico de una sola vez
+         grid.pars = list(fontfamily = "serif"), 
+         key.title = list(cex = 0.2, font = 1) 
+       ),
+       auto.key = list(
+         title = expression(Problema),
+         cex.title = 1.2, 
+         space = "right"
+       ))
 ```
 
-
-Posible interacción entre el Semestre y la herramienta
 
 
 ### Interacción entre Herramienta y Grupo
 
 
 ```{r}
-xyplot(dif_minutos~tool, groups = Grupo_1 ,type=c("r","p"),xlab="Herramienta",
-ylab="Tiempo",data=base1.1,auto.key = TRUE)
+xyplot(dif_minutos ~ tool, 
+       groups = Grupo_1, 
+       type = c("r", "p"),
+       xlab = "Herramienta",
+       ylab = "Tiempo",
+       main = "Interacción entre la herramienta y el grupo",
+       data = base1.1,
+       par.settings = list(
+         # Cambia la fuente de todo el gráfico de una sola vez
+         grid.pars = list(fontfamily = "serif")
+       ),
+       auto.key = list(
+         title = expression(Grupo),
+         cex.title = 1.2,
+         space = "right"
+       ))
+```
+
+
+```{r}
+xyplot(dif_minutos ~ Grupo_1, 
+       groups = tool, 
+       type = c("r", "p"),
+       xlab = "Grupo",
+       ylab = "Tiempo",
+       main = "Interacción entre la herramienta y el grupo",
+       data = base1.1,
+       par.settings = list(
+         grid.pars = list(fontfamily = "serif") # Mantiene la fuente uniforme
+       ),
+       auto.key = list(
+         # Forzamos el título y su tamaño aquí usando un truco de texto expresivo
+         title = expression(Herramienta),
+         cex.title = 1.2, # <-- Este argumento directo en auto.key suele destrabarlo
+         space = "right"
+       ))
 ```
 
 
@@ -272,18 +335,89 @@ round(ic,3)
 # Modelo 3 (modelo de usabilidad)
 
 
+```{r}
+xyplot(sus ~ tool, 
+       groups = Pregunta, 
+       type = c("r", "p"),
+       xlab = "Herramienta",
+       ylab = "Tiempo",
+       main = "Interacción entre la herramienta y el tipo de problema",
+       data = base1.1,
+       par.settings = list(
+         # Cambia la fuente de todo el gráfico de una sola vez
+         grid.pars = list(fontfamily = "serif"), 
+         key.title = list(cex = 0.2, font = 1) 
+       ),
+       auto.key = list(
+         title = expression(Problema),
+         cex.title = 1.2, 
+         space = "right"
+       ))
+```
 
 ```{r}
-xyplot(sus~tool, groups = Pregunta ,type=c("r","p"),xlab="Herramienta",
-ylab="Tiempo",data=base1.1,auto.key = TRUE)
+xyplot(sus ~ Pregunta, 
+       groups = tool, 
+       type = c("r", "p"),
+       xlab = "Problema",
+       ylab = "Tiempo",
+       main = "Interacción entre la herramienta y el tipo de problema",
+       data = base1.1,
+       par.settings = list(
+         # Cambia la fuente de todo el gráfico de una sola vez
+         grid.pars = list(fontfamily = "serif"), 
+         key.title = list(cex = 0.2, font = 1) 
+       ),
+       auto.key = list(
+         title = expression(Herramienta),
+         cex.title = 1.2, 
+         space = "right"
+       ))
 ```
-Gráfico por persona en el eje x 
+
+
+
+
 
 ```{r}
-xyplot(sus~Grupo_1, groups = tool ,type=c("r","p"),xlab="Preguntas",
-ylab="Usabilidad",data=base1.1,auto.key = TRUE)
+xyplot(sus ~ tool, 
+       groups = Grupo_1, 
+       type = c("r", "p"),
+       xlab = "Herramienta",
+       ylab = "Tiempo",
+       main = "Interacción entre la herramienta y el grupo",
+       data = base1.1,
+       par.settings = list(
+         # Cambia la fuente de todo el gráfico de una sola vez
+         grid.pars = list(fontfamily = "serif")
+       ),
+       auto.key = list(
+         title = expression(Grupo),
+         cex.title = 1.2,
+         space = "right"
+       ))
 ```
 
+
+
+```{r}
+xyplot(sus ~ Grupo_1, 
+       groups = tool, 
+       type = c("r", "p"),
+       xlab = "Grupo",
+       ylab = "Tiempo",
+       main = "Interacción entre la herramienta y el grupo",
+       data = base1.1,
+       par.settings = list(
+         grid.pars = list(fontfamily = "serif") # Mantiene la fuente uniforme
+       ),
+       auto.key = list(
+         # Forzamos el título y su tamaño aquí usando un truco de texto expresivo
+         title = expression(Herramienta),
+         cex.title = 1.2, # <-- Este argumento directo en auto.key suele destrabarlo
+         space = "right"
+       ))
+```
 
 
 
