@@ -258,7 +258,264 @@ mod1.final = lmer(log(dif_minutos) ~ tool+Pregunta + Grupo_1 + (1|id_est),
 
 drop1(mod1.final, test = "Chisq")
 ```
-`
+
+
+
+```{r}
+confint(mod1.final)
+```
+
+```{r}
+round(fixef(mod1.final),3)
+```
+
+```{r}
+ranef(mod1.final)
+```
+# Simulación
+
+Vamos a asumir que `sd_(id_est)` es 0.16
+
+```{r}
+confint(VarCorr(mod1.final))
+```
+
+
+```{r}
+mean(base1.1$dif_minutos)
+```
+
+
+
+```{r}
+# 1. Parámetros iniciales corregidos
+r = c(4, 12, 14, 3, 2) 
+n_estudiantes = sum(r) # 35 estudiantes en total
+med = 3.59 # Intercepto del modelo (Categorías de referencia: Grupo 2, Problema 1, Herramienta I)
+
+# Unificación de efectos fijos en vectores estructurados
+ef_herramienta = c("I" = 0, "J" = -0.157)
+ef_problem     = c(0, -0.416, -0.127, -0.073) # Para Problemas 1, 2, 3 y 4
+ef_g           = c(0, 0.272, -0.280, -0.027, 0.025) # Para Grupos 2, 3, 4, 5 y 6
+
+# Simulación de efectos aleatorios (Dimensiones teóricas correctas)
+sd_est = 0.16
+sd_res = 0.49
+
+
+# Cada estudiante responde 4 problemas, expandimos el diseño
+grupo_expandido = rep(factor(rep(2:6, times = r)), each = 4)
+problema_expandido = factor(rep(1:4, times = n_estudiantes))
+
+# 2. Definición del bloque base con la restricción estricta
+bloque_base = c("I", "I", "J", "J")
+
+# Generamos las combinaciones aleatorias para los 35 estudiantes
+herramientas_lista = replicate(n_estudiantes, sample(bloque_base), simplify = FALSE)
+herramientas_vector = unlist(herramientas_lista)
+
+# 3. Asignación pura por indexación con corchetes []
+secuencia_total = 1:length(grupo_expandido)
+herramienta = factor(herramientas_vector[secuencia_total])
+
+
+# ef_est se genera por estudiante (35) y se expande a sus 4 mediciones
+ef_est = rep(rnorm(n_estudiantes, 0, sd_est), each = 4)
+# epsilon se genera para cada una de las 140 mediciones individuales
+epsilon = rnorm(length(grupo_expandido), 0, sd_res)
+
+
+
+# 4. Simulación de la respuesta (Indexación corregida por posición numérica)
+y = med + 
+    ef_herramienta[herramienta] + 
+    ef_problem[as.numeric(problema_expandido)] + 
+    ef_g[as.numeric(grupo_expandido)] + 
+    ef_est + 
+    epsilon
+
+# 5. Construcción y visualización del Data Frame
+df_final = data.frame(
+  Estudiante = rep(1:n_estudiantes, each = 4),
+  Grupo = grupo_expandido,
+  Problema = problema_expandido,
+  Herramienta = herramienta,
+  time = y
+)
+
+# Mostramos los primeros 4 estudiantes para ver sus combinaciones y tiempos
+print(head(df_final, 16))
+```
+
+
+
+```{r}
+# 1. Colapsamos las herramientas por cada estudiante usando split e indexación
+combinaciones_por_estudiante = sapply(
+  split(df_final$Herramienta, df_final$Estudiante), 
+  function(x) paste(x, collapse = "")
+)
+
+# 2. Generamos la tabla de frecuencias de las combinaciones
+tabla_conteo = table(combinaciones_por_estudiante)
+
+# 3. Lo mostramos de forma elegante
+print("Frecuencia de las combinaciones generadas:")
+print(tabla_conteo)
+
+# 4. Verificación matemática: ¿Todos tienen 4 asignaciones válidas?
+print(paste("Total de estudiantes auditados:", length(combinaciones_por_estudiante)))
+```
+
+
+
+
+
+## Simulación desbalanceada
+
+
+```{r, message=FALSE, warning=FALSE}
+
+# 1. Parámetros iniciales corregidos
+r = c(4, 12, 14, 3, 2) 
+n_estudiantes = sum(r) # 35 estudiantes en total
+med = 3.59 # Intercepto del modelo (Categorías de referencia: Grupo 2, Problema 1, Herramienta I)
+
+# Unificación de efectos fijos en vectores estructurados
+ef_herramienta = c("I" = 0, "J" = -0.157)
+ef_problem     = c(0, -0.416, -0.127, -0.073) # Para Problemas 1, 2, 3 y 4
+ef_g           = c(0, 0.272, -0.280, -0.027, 0.025) # Para Grupos 2, 3, 4, 5 y 6
+
+# Simulación de efectos aleatorios (Dimensiones teóricas correctas)
+sd_est = 0.16
+sd_res = 0.49
+
+
+# Cada estudiante responde 4 problemas, expandimos el diseño
+grupo_expandido = rep(factor(rep(2:6, times = r)), each = 4)
+problema_expandido = factor(rep(1:4, times = n_estudiantes))
+est = rep(1:n_estudiantes, each = 4)
+
+# 2. Definición del bloque base con la restricción estricta
+bloque_base = c("I", "I", "J", "J")
+
+# Generamos las combinaciones aleatorias para los 35 estudiantes
+herramientas_lista = replicate(n_estudiantes, sample(bloque_base), simplify = FALSE)
+herramientas_vector = unlist(herramientas_lista)
+
+# 3. Asignación pura por indexación con corchetes []
+secuencia_total = 1:length(grupo_expandido)
+herramienta = factor(herramientas_vector[secuencia_total])
+
+
+
+sdest = c()
+sdres = c()
+p_herramienta = c()
+
+for (i in 1:1000) {
+  # ef_est se genera por estudiante (35) y se expande a sus 4 mediciones
+ef_est = rep(rnorm(n_estudiantes, 0, sd_est), each = 4)
+# epsilon se genera para cada una de las 140 mediciones individuales
+epsilon = rnorm(length(grupo_expandido), 0, sd_res)
+
+
+# 4. Simulación de la respuesta (Indexación corregida por posición numérica)
+y = med + 
+    ef_herramienta[herramienta] + 
+    ef_problem[as.numeric(problema_expandido)] + 
+    ef_g[as.numeric(grupo_expandido)] + 
+    ef_est + 
+    epsilon
+
+mod= lmer(y ~ herramienta +problema_expandido + grupo_expandido + (1|est))
+vc = VarCorr(mod)
+vc = as.data.frame(vc)
+sdest[i] = vc[1,5]
+sdres[i] = vc[2,5]
+p_herramienta[i] = drop1(mod, test = "Chisq")[2,4]
+}
+
+pot = mean(p_herramienta< 0.05)
+mean_est = mean(sdest)
+mean_res = mean(sdres)
+pot
+
+```
+## Simulación balanceada
+
+Todos con 14 estudiantes escenario ideal
+
+```{r, message=FALSE, warning=FALSE}
+
+# 1. Parámetros iniciales corregidos
+r = c(14, 14, 14, 14, 14) 
+n_estudiantes = sum(r) # 35 estudiantes en total
+med = 3.59 # Intercepto del modelo (Categorías de referencia: Grupo 2, Problema 1, Herramienta I)
+
+# Unificación de efectos fijos en vectores estructurados
+ef_herramienta = c("I" = 0, "J" = -0.157)
+ef_problem     = c(0, -0.416, -0.127, -0.073) # Para Problemas 1, 2, 3 y 4
+ef_g           = c(0, 0.272, -0.280, -0.027, 0.025) # Para Grupos 2, 3, 4, 5 y 6
+
+# Simulación de efectos aleatorios (Dimensiones teóricas correctas)
+sd_est = 0.16
+sd_res = 0.49
+
+
+# Cada estudiante responde 4 problemas, expandimos el diseño
+grupo_expandido = rep(factor(rep(2:6, times = r)), each = 4)
+problema_expandido = factor(rep(1:4, times = n_estudiantes))
+est = rep(1:n_estudiantes, each = 4)
+
+# 2. Definición del bloque base con la restricción estricta
+bloque_base = c("I", "I", "J", "J")
+
+# Generamos las combinaciones aleatorias para los 35 estudiantes
+herramientas_lista = replicate(n_estudiantes, sample(bloque_base), simplify = FALSE)
+herramientas_vector = unlist(herramientas_lista)
+
+# 3. Asignación pura por indexación con corchetes []
+secuencia_total = 1:length(grupo_expandido)
+herramienta = factor(herramientas_vector[secuencia_total])
+
+
+
+sdest = c()
+sdres = c()
+p_herramienta = c()
+
+for (i in 1:1000) {
+  # ef_est se genera por estudiante (35) y se expande a sus 4 mediciones
+ef_est = rep(rnorm(n_estudiantes, 0, sd_est), each = 4)
+# epsilon se genera para cada una de las 140 mediciones individuales
+epsilon = rnorm(length(grupo_expandido), 0, sd_res)
+
+
+# 4. Simulación de la respuesta (Indexación corregida por posición numérica)
+y = med + 
+    ef_herramienta[herramienta] + 
+    ef_problem[as.numeric(problema_expandido)] + 
+    ef_g[as.numeric(grupo_expandido)] + 
+    ef_est + 
+    epsilon
+
+mod= lmer(y ~ herramienta +problema_expandido + grupo_expandido + (1|est))
+vc = VarCorr(mod)
+vc = as.data.frame(vc)
+sdest[i] = vc[1,5]
+sdres[i] = vc[2,5]
+p_herramienta[i] = drop1(mod, test = "Chisq")[2,4]
+}
+
+pot = mean(p_herramienta< 0.05)
+mean_est = mean(sdest)
+mean_res = mean(sdres)
+pot
+
+```
+
+
 
 ## Supuestos 
 
@@ -501,6 +758,9 @@ Por lo tanto, según el gráfico y la prueba de Levene no rechazamos el supuesto
 
 ```{r}
 confint(mod2.4)
+```
+```{r}
+fixef(mod2.4)
 ```
 
 
